@@ -36,10 +36,11 @@ services:
       - "8080:8080"
 
   frontend:
-    image: nginx:alpine
+    build:
+      context: ./Els_Lew_Repetitor_Frontend
+      dockerfile: Dockerfile
     container_name: repedu-frontend
     volumes:
-      - ./Els_Lew_Repetitor_Frontend:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "3001:80"
