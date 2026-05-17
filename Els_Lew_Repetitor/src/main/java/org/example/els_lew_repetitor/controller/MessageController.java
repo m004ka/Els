@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.els_lew_repetitor.dto.request.MessageRequest;
+import org.example.els_lew_repetitor.dto.response.ContactResponse;
 import org.example.els_lew_repetitor.dto.response.MessageResponse;
 import org.example.els_lew_repetitor.service.MessageService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,7 +40,7 @@ public class MessageController {
     }
 
     @GetMapping("/contacts")
-    public List<Long> getContacts(@AuthenticationPrincipal UserDetails userDetails) {
+    public List<ContactResponse> getContacts(@AuthenticationPrincipal UserDetails userDetails) {
         return messageService.getContacts(userDetails.getUsername());
     }
 }

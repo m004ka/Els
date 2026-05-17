@@ -288,10 +288,10 @@ export default function TutorCabinet() {
             <div className="space-y-2">
               <h2 className="font-bold text-gray-800 mb-2">Переписки</h2>
               {!contacts.length ? <p className="text-gray-400 text-sm">Нет переписок</p>
-                : contacts.map(id => (
-                  <button key={id} onClick={() => openChat(id)}
-                    className={`w-full text-left card py-3 text-sm font-medium hover:border-orange-400 transition ${activeChat===id?'border-orange-400':''}`}>
-                    Пользователь #{id}
+                : contacts.map(c => (
+                  <button key={c.id} onClick={() => openChat(c.id)}
+                    className={`w-full text-left card py-3 text-sm font-medium hover:border-orange-400 transition ${activeChat===c.id?'border-orange-400':''}`}>
+                    {c.firstName} {c.lastName}
                   </button>
                 ))}
             </div>

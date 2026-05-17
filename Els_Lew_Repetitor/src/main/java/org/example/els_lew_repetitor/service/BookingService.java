@@ -121,6 +121,7 @@ public class BookingService {
                 .slotStart(b.getSlot().getStartTime())
                 .slotEnd(b.getSlot().getEndTime())
                 .subjectName(b.getSubject() != null ? b.getSubject().getName() : null)
+                .tutorId(tp.getUser().getId())
                 .tutorFirstName(tp.getUser().getFirstName())
                 .tutorLastName(tp.getUser().getLastName())
                 .studentFirstName(b.getStudent().getFirstName())

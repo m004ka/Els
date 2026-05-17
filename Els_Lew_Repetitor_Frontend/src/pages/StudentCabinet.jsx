@@ -51,8 +51,11 @@ export default function StudentCabinet() {
     } catch (e) { toast(e.message, 'error') }
   }
 
-  const openChat = async id => {
+  const openChat = async (id, contact) => {
     setActiveChat(id)
+    if (contact && !contacts.find(c => c.id === id)) {
+      setContacts(prev => [...prev, contact])
+    }
     const msgs = await api.messages.getConversation(id)
     setMessages(msgs)
   }
@@ -99,6 +102,8 @@ export default function StudentCabinet() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`badge ${STATUS_COLOR[b.status]}`}>{STATUS_RU[b.status]}</span>
+                    <button onClick={() => { selectTab('messages'); setTimeout(() => openChat(b.tutorId, { id: b.tutorId, firstName: b.tutorFirstName, lastName: b.tutorLastName }), 100) }}
+                      className="text-xs text-orange-500 hover:underline">💬 Написать</button>
                     {b.status === 'CONFIRMED' && (
                       <button onClick={() => cancelBooking(b.id)} className="text-xs text-red-400 hover:underline">Отменить</button>
                     )}
@@ -172,11 +177,11 @@ export default function StudentCabinet() {
             <div className="space-y-2">
               <h2 className="font-bold text-gray-800 mb-2">Переписки</h2>
               {!contacts.length
-                ? <p className="text-gray-400 text-sm">Нет переписок</p>
-                : contacts.map(id => (
-                  <button key={id} onClick={() => openChat(id)}
-                    className={`w-full text-left card py-3 text-sm font-medium hover:border-orange-400 transition ${activeChat===id?'border-orange-400':''}`}>
-                    Пользователь #{id}
+                ? <p className="text-gray-400 text-sm">Нет переписок. Напишите репетитору из вкладки «Записи».</p>
+                : contacts.map(c => (
+                  <button key={c.id} onClick={() => openChat(c.id)}
+                    className={`w-full text-left card py-3 text-sm font-medium hover:border-orange-400 transition ${activeChat===c.id?'border-orange-400':''}`}>
+                    {c.firstName} {c.lastName}
                   </button>
                 ))}
             </div>

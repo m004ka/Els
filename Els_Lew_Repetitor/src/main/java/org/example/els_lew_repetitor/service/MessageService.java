@@ -2,6 +2,7 @@ package org.example.els_lew_repetitor.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.els_lew_repetitor.dto.request.MessageRequest;
+import org.example.els_lew_repetitor.dto.response.ContactResponse;
 import org.example.els_lew_repetitor.dto.response.MessageResponse;
 import org.example.els_lew_repetitor.entity.Message;
 import org.example.els_lew_repetitor.entity.User;
@@ -59,12 +60,17 @@ public class MessageService {
         return messageRepository.countByReceiverAndIsReadFalse(user);
     }
 
-    public List<Long> getContacts(String email) {
+    public List<ContactResponse> getContacts(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         return messageRepository.findBySenderOrReceiver(user, user).stream()
-                .map(m -> m.getSender().getId().equals(user.getId()) ? m.getReceiver().getId() : m.getSender().getId())
+                .map(m -> m.getSender().getId().equals(user.getId()) ? m.getReceiver() : m.getSender())
                 .distinct()
+                .map(u -> ContactResponse.builder()
+                        .id(u.getId())
+                        .firstName(u.getFirstName())
+                        .lastName(u.getLastName())
+                        .build())
                 .toList();
     }
 

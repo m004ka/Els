@@ -23,6 +23,7 @@ public class BookingResponse {
     private String tutorLastName;
     private String studentFirstName;
     private String studentLastName;
+    private Long tutorId;
     private Long tutorProfileId;
     private Long studentId;
 }
