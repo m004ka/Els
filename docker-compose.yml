@@ -42,7 +42,7 @@ services:
       - ./Els_Lew_Repetitor_Frontend:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      - "3000:80"
+      - "3001:80"
     depends_on:
       - backend
 
