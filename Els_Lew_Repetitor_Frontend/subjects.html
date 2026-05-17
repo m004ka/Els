@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Предметы — RepEdu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="bg-[#FFF9F0] min-h-screen">
+
+<nav class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur border-b border-orange-100 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <a href="index.html" class="text-2xl font-extrabold gradient-text">RepEdu</a>
+    <div id="nav-auth" class="flex items-center gap-3">
+      <a href="login.html" class="px-4 py-2 rounded-xl border border-orange-400 text-orange-500 text-sm font-semibold">Войти</a>
+      <a href="register.html" class="px-4 py-2 rounded-xl gradient-btn text-white text-sm font-semibold">Регистрация</a>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 max-w-6xl mx-auto">
+  <div class="mb-2">
+    <a href="cities.html" class="text-orange-500 text-sm font-medium hover:underline">← Все города</a>
+  </div>
+  <div class="mb-8">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-2" id="page-title">Предметы</h1>
+    <p class="text-gray-500">Выберите предмет для поиска репетитора</p>
+  </div>
+
+  <div id="subjects-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div class="col-span-full text-center text-gray-400 py-12">Загрузка...</div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  renderNavAuth();
+  const params = new URLSearchParams(window.location.search);
+  const cityId = params.get('cityId');
+  const cityName = params.get('cityName') || 'Город';
+
+  if (cityName) document.getElementById('page-title').textContent = cityName;
+
+  const subjectIcons = {
+    'Математика': '📐', 'Русский язык': '📝', 'Физика': '⚡',
+    'Химия': '🧪', 'Биология': '🧬', 'История': '📜',
+    'Обществознание': '🏛️', 'География': '🌍', 'Информатика и ИКТ': '💻',
+    'Английский язык': '🇬🇧', 'Немецкий язык': '🇩🇪', 'Французский язык': '🇫🇷',
+    'Испанский язык': '🇪🇸', 'Китайский язык': '🇨🇳', 'Литература': '📖', 'Астрономия': '🔭'
+  };
+
+  const loader = cityId ? api.subjects.getByCity(cityId) : api.subjects.getAll();
+  loader.then(subjects => {
+    const grid = document.getElementById('subjects-grid');
+    if (!subjects.length) { grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-12">Нет репетиторов по данному городу</div>'; return; }
+    grid.innerHTML = subjects.map(s => `
+      <div class="subject-card" onclick="window.location='tutors.html?${cityId ? `cityId=${cityId}&` : ''}subjectId=${s.id}&subjectName=${encodeURIComponent(s.name)}'">
+        <div class="text-3xl mb-2">${subjectIcons[s.name] || '📚'}</div>
+        <div class="font-bold text-gray-800">${s.name}</div>
+        <div class="text-xs text-orange-400 mt-1">${s.category}</div>
+        <div class="text-xs text-gray-400 mt-1">${s.tutorCount} репетитор${declension(s.tutorCount)}</div>
+      </div>
+    `).join('');
+  });
+
+  function declension(n) {
+    if (n % 100 >= 11 && n % 100 <= 19) return 'ов';
+    if (n % 10 === 1) return '';
+    if (n % 10 >= 2 && n % 10 <= 4) return 'а';
+    return 'ов';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Профиль репетитора — RepEdu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="bg-[#FFF9F0] min-h-screen">
+
+<nav class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur border-b border-orange-100 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <a href="index.html" class="text-2xl font-extrabold gradient-text">RepEdu</a>
+    <div id="nav-auth" class="flex items-center gap-3">
+      <a href="login.html" class="px-4 py-2 rounded-xl border border-orange-400 text-orange-500 text-sm font-semibold">Войти</a>
+      <a href="register.html" class="px-4 py-2 rounded-xl gradient-btn text-white text-sm font-semibold">Регистрация</a>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 max-w-6xl mx-auto">
+  <a href="javascript:history.back()" class="text-orange-500 text-sm font-medium hover:underline mb-6 inline-block">← Назад</a>
+  <div id="profile-content" class="text-center text-gray-400 py-16">Загрузка...</div>
+</div>
+
+<!-- Book modal -->
+<div id="book-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+    <h2 class="text-xl font-bold mb-4">Записаться на урок</h2>
+    <p class="text-sm text-gray-500 mb-4">Выберите предмет для занятия</p>
+    <select id="book-subject" class="input-field mb-4">
+      <option value="">Без предмета</option>
+    </select>
+    <p class="text-sm font-semibold text-gray-700 mb-2">Выбранный слот:</p>
+    <div id="book-slot-info" class="bg-orange-50 rounded-xl p-3 text-sm text-gray-700 mb-4"></div>
+    <div id="book-error" class="hidden text-red-500 text-sm mb-3"></div>
+    <div class="flex gap-3">
+      <button onclick="confirmBooking()" class="btn-primary flex-1">Записаться</button>
+      <button onclick="closeBookModal()" class="btn-secondary flex-1">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  renderNavAuth();
+  const params = new URLSearchParams(window.location.search);
+  const tutorId = params.get('id');
+  let selectedSlotId = null;
+
+  if (!tutorId) window.location.href = 'tutors.html';
+
+  Promise.all([
+    api.tutors.getById(tutorId),
+    api.reviews.getByTutor(tutorId),
+    api.tutors.getSlots(tutorId)
+  ]).then(([tutor, reviews, slots]) => {
+    renderProfile(tutor, reviews, slots);
+  }).catch(() => {
+    document.getElementById('profile-content').innerHTML = '<div class="text-red-400 py-16">Ошибка загрузки профиля</div>';
+  });
+
+  function renderProfile(t, reviews, slots) {
+    const isLoggedIn_ = isLoggedIn();
+    const user = getUser();
+    document.getElementById('profile-content').innerHTML = `
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- LEFT -->
+        <div class="lg:col-span-1 space-y-6">
+          <div class="card text-center">
+            <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4 overflow-hidden">
+              ${t.photoUrl ? `<img src="${t.photoUrl}" class="w-full h-full object-cover"/>` : t.firstName[0]}
+            </div>
+            <h1 class="text-2xl font-extrabold text-gray-900">${t.firstName} ${t.lastName}</h1>
+            <p class="text-gray-400 text-sm mb-2">@${t.username}</p>
+            <div class="flex justify-center items-center gap-1 mb-3">
+              ${starsHtml(t.rating)}
+              <span class="text-gray-600 font-semibold ml-1">${t.rating.toFixed(1)}</span>
+              <span class="text-gray-400 text-sm">(${t.totalReviews} отзывов)</span>
+            </div>
+            ${t.pricePerHour ? `<div class="text-2xl font-extrabold gradient-text">${t.pricePerHour} ₽/час</div>` : '<div class="text-gray-400">Цена по договорённости</div>'}
+          </div>
+
+          <div class="card">
+            <h3 class="font-bold text-gray-800 mb-3">Статистика</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-gray-500">Уроков проведено</span><b>${t.totalLessons}</b></div>
+              <div class="flex justify-between"><span class="text-gray-500">Отзывов</span><b>${t.totalReviews}</b></div>
+              <div class="flex justify-between"><span class="text-gray-500">Город</span><b>${t.cityName || '—'}</b></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="font-bold text-gray-800 mb-3">Предметы</h3>
+            <div class="flex flex-wrap gap-2">
+              ${t.subjects.map(s => `<span class="badge badge-blue">${s}</span>`).join('') || '<span class="text-gray-400 text-sm">Не указаны</span>'}
+            </div>
+          </div>
+
+          ${(t.telegramContact || t.vkContact || t.phoneContact) ? `
+          <div class="card">
+            <h3 class="font-bold text-gray-800 mb-3">Контакты</h3>
+            <div class="space-y-2 text-sm">
+              ${t.telegramContact ? `<a href="https://t.me/${t.telegramContact.replace('@','')}" target="_blank" class="flex items-center gap-2 text-blue-500 hover:underline">📱 Telegram: ${t.telegramContact}</a>` : ''}
+              ${t.vkContact ? `<a href="${t.vkContact}" target="_blank" class="flex items-center gap-2 text-blue-700 hover:underline">💬 ВКонтакте</a>` : ''}
+              ${t.phoneContact ? `<span class="flex items-center gap-2 text-gray-700">📞 ${t.phoneContact}</span>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
+
+        <!-- RIGHT -->
+        <div class="lg:col-span-2 space-y-6">
+          ${t.bio ? `<div class="card"><h3 class="font-bold text-gray-800 mb-2">О репетиторе</h3><p class="text-gray-600 text-sm leading-relaxed">${t.bio}</p></div>` : ''}
+
+          <!-- SLOTS -->
+          <div class="card">
+            <h3 class="font-bold text-gray-800 mb-4">Доступные слоты</h3>
+            ${!slots.length ? '<p class="text-gray-400 text-sm">Свободных слотов нет</p>' : `
+            <div class="grid sm:grid-cols-2 gap-3">
+              ${slots.filter(s => s.status === 'FREE').map(s => `
+                <div class="slot-free rounded-xl p-3 flex justify-between items-center">
+                  <div class="text-sm">
+                    <div class="font-semibold">${formatDate(s.startTime)}</div>
+                    <div class="text-xs opacity-75">до ${formatDate(s.endTime)}</div>
+                    ${s.price ? `<div class="text-xs font-bold mt-1">${s.price} ₽</div>` : ''}
+                  </div>
+                  ${isLoggedIn_ && user.role === 'STUDENT' ? `
+                  <button onclick="openBookModal(${s.id}, '${formatDate(s.startTime)}')" class="btn-primary text-xs px-3 py-1.5 ml-2">Записаться</button>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+            ${!isLoggedIn_ ? `<p class="text-sm text-orange-500 mt-3"><a href="login.html" class="underline font-semibold">Войдите</a>, чтобы записаться</p>` : ''}
+            `}
+          </div>
+
+          <!-- REVIEWS -->
+          <div class="card">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-gray-800">Отзывы</h3>
+              ${isLoggedIn_ && user.role === 'STUDENT' ? `<button onclick="openReviewForm()" class="btn-secondary text-sm py-2 px-4">Оставить отзыв</button>` : ''}
+            </div>
+            <div id="review-form" class="hidden mb-4 bg-orange-50 rounded-xl p-4">
+              <p class="text-sm font-semibold text-gray-700 mb-2">Ваша оценка:</p>
+              <div class="flex gap-2 mb-3" id="star-selector">
+                ${[1,2,3,4,5].map(i => `<button onclick="selectStar(${i})" class="text-3xl star-btn" data-val="${i}">☆</button>`).join('')}
+              </div>
+              <textarea id="review-comment" class="input-field" rows="3" placeholder="Ваш отзыв..."></textarea>
+              <div id="review-error" class="hidden text-red-500 text-sm mt-2"></div>
+              <button onclick="submitReview()" class="btn-primary mt-3">Отправить</button>
+            </div>
+            ${!reviews.length ? '<p class="text-gray-400 text-sm">Отзывов пока нет</p>' : reviews.map(r => `
+              <div class="border-b border-orange-50 pb-4 mb-4 last:border-0 last:mb-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-semibold text-gray-800 text-sm">${r.studentFirstName} ${r.studentLastName}</span>
+                  <span class="text-yellow-400 text-sm">${starsHtml(r.rating)}</span>
+                  <span class="text-orange-500 font-bold text-sm">${r.rating.toFixed(1)}</span>
+                  <span class="text-gray-400 text-xs ml-auto">${new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
+                </div>
+                ${r.comment ? `<p class="text-gray-600 text-sm">${r.comment}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Load subjects for booking
+    api.subjects.getAll().then(subjects => {
+      const sel = document.getElementById('book-subject');
+      if (sel) subjects.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+    });
+  }
+
+  let selectedRating = 0;
+  function selectStar(val) {
+    selectedRating = val;
+    document.querySelectorAll('.star-btn').forEach((btn, i) => {
+      btn.textContent = i < val ? '★' : '☆';
+      btn.style.color = i < val ? '#FFB800' : '#CBD5E1';
+    });
+  }
+
+  function openReviewForm() {
+    document.getElementById('review-form').classList.toggle('hidden');
+  }
+
+  async function submitReview() {
+    if (!selectedRating) { document.getElementById('review-error').textContent = 'Выберите оценку'; document.getElementById('review-error').classList.remove('hidden'); return; }
+    try {
+      await api.reviews.add({
+        tutorProfileId: parseInt(tutorId),
+        rating: selectedRating,
+        comment: document.getElementById('review-comment').value
+      });
+      showToast('Отзыв отправлен!');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      document.getElementById('review-error').textContent = err.message;
+      document.getElementById('review-error').classList.remove('hidden');
+    }
+  }
+
+  function openBookModal(slotId, slotInfo) {
+    if (!requireAuth('STUDENT')) return;
+    selectedSlotId = slotId;
+    document.getElementById('book-slot-info').textContent = slotInfo;
+    document.getElementById('book-modal').classList.remove('hidden');
+  }
+
+  function closeBookModal() {
+    document.getElementById('book-modal').classList.add('hidden');
+    selectedSlotId = null;
+  }
+
+  async function confirmBooking() {
+    const subjectId = document.getElementById('book-subject').value;
+    try {
+      await api.bookings.create({
+        slotId: selectedSlotId,
+        subjectId: subjectId ? parseInt(subjectId) : null
+      });
+      showToast('Вы записаны на урок!');
+      closeBookModal();
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      document.getElementById('book-error').textContent = err.message;
+      document.getElementById('book-error').classList.remove('hidden');
+    }
+  }
+</script>
+</body>
+</html>

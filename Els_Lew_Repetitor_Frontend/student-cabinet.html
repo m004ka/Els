@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Кабинет студента — RepEdu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="bg-[#FFF9F0] min-h-screen">
+
+<nav class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur border-b border-orange-100 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <a href="index.html" class="text-2xl font-extrabold gradient-text">RepEdu</a>
+    <div id="nav-auth" class="flex items-center gap-3"></div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 max-w-7xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gray-900" id="welcome-text">Личный кабинет</h1>
+      <p class="text-gray-400">Студент</p>
+    </div>
+    <a href="cities.html" class="btn-primary text-sm px-5 py-2.5">Найти репетитора</a>
+  </div>
+
+  <!-- TABS -->
+  <div class="flex gap-2 mb-8 bg-white rounded-2xl p-2 border border-orange-100 w-fit">
+    <button class="tab-btn active" onclick="showTab('bookings')">📅 Записи</button>
+    <button class="tab-btn" onclick="showTab('progress')">📈 Прогресс</button>
+    <button class="tab-btn" onclick="showTab('materials')">📚 Материалы</button>
+    <button class="tab-btn" onclick="showTab('messages')">💬 Сообщения</button>
+  </div>
+
+  <!-- BOOKINGS -->
+  <div id="tab-bookings" class="tab-content">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Мои записи</h2>
+    <div id="bookings-list" class="space-y-4">Загрузка...</div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="tab-progress" class="tab-content hidden">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold text-gray-800">Мой прогресс</h2>
+      <button onclick="openAddProgress()" class="btn-primary text-sm px-4 py-2">+ Добавить предмет</button>
+    </div>
+    <div id="progress-list" class="space-y-4"></div>
+
+    <div id="add-progress-form" class="hidden mt-6 card">
+      <h3 class="font-bold mb-3">Добавить / обновить прогресс</h3>
+      <select id="progress-subject" class="input-field mb-3">
+        <option value="">Выберите предмет</option>
+      </select>
+      <label class="text-sm font-semibold text-gray-700 mb-1 block">Прогресс: <span id="progress-val">50</span>%</label>
+      <input type="range" id="progress-percent" min="0" max="100" value="50" class="w-full accent-orange-500 mb-3"
+        oninput="document.getElementById('progress-val').textContent = this.value"/>
+      <textarea id="progress-notes" class="input-field mb-3" rows="2" placeholder="Заметки..."></textarea>
+      <button onclick="saveProgress()" class="btn-primary">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- MATERIALS -->
+  <div id="tab-materials" class="tab-content hidden">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Учебные материалы</h2>
+    <div id="materials-list" class="grid md:grid-cols-2 gap-4"></div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div id="tab-messages" class="tab-content hidden">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Сообщения</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div id="contacts-list" class="space-y-2">
+        <p class="text-gray-400 text-sm">Нет переписок</p>
+      </div>
+      <div class="md:col-span-2" id="chat-area">
+        <div class="card h-96 flex items-center justify-center text-gray-400">Выберите переписку</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  if (!requireAuth('STUDENT')) {}
+
+  const user = getUser();
+  if (user) document.getElementById('welcome-text').textContent = `Привет, ${user.firstName}!`;
+  renderNavAuth();
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    event.target.classList.add('active');
+    if (tab === 'bookings') loadBookings();
+    if (tab === 'progress') loadProgress();
+    if (tab === 'materials') loadMaterials();
+    if (tab === 'messages') loadMessages();
+  }
+
+  // BOOKINGS
+  function loadBookings() {
+    api.bookings.getMy().then(bookings => {
+      const el = document.getElementById('bookings-list');
+      if (!bookings.length) { el.innerHTML = '<div class="card text-center text-gray-400">Нет записей. <a href="cities.html" class="text-orange-500 underline">Найти репетитора</a></div>'; return; }
+      const statusMap = { PENDING: 'badge-yellow', CONFIRMED: 'badge-green', CANCELLED: 'badge-red', COMPLETED: 'badge-blue' };
+      const statusRu = { PENDING: 'Ожидает', CONFIRMED: 'Подтверждено', CANCELLED: 'Отменено', COMPLETED: 'Завершено' };
+      el.innerHTML = bookings.map(b => `
+        <div class="card flex items-center justify-between gap-4">
+          <div>
+            <div class="font-bold text-gray-900">${b.tutorFirstName} ${b.tutorLastName}</div>
+            <div class="text-sm text-gray-500">${b.subjectName || 'Без предмета'} · ${formatDate(b.slotStart)}</div>
+            <div class="text-xs text-gray-400">до ${formatDate(b.slotEnd)}</div>
+          </div>
+          <div class="flex flex-col items-end gap-2">
+            <span class="badge ${statusMap[b.status]}">${statusRu[b.status]}</span>
+            ${b.status === 'CONFIRMED' ? `<button onclick="cancelBooking(${b.id})" class="text-xs text-red-400 hover:underline">Отменить</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }).catch(err => {
+      document.getElementById('bookings-list').innerHTML = `<div class="card text-center text-red-400">Ошибка загрузки записей: ${err.message}</div>`;
+    });
+  }
+
+  async function cancelBooking(id) {
+    if (!confirm('Отменить запись?')) return;
+    try { await api.bookings.cancel(id); showToast('Запись отменена'); loadBookings(); }
+    catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // PROGRESS
+  function loadProgress() {
+    api.student.getProgress().then(items => {
+      const el = document.getElementById('progress-list');
+      if (!items.length) { el.innerHTML = '<div class="card text-center text-gray-400">Нет данных о прогрессе</div>'; return; }
+      el.innerHTML = items.map(p => `
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-semibold text-gray-800">${p.subjectName}</span>
+            <span class="text-orange-500 font-bold">${p.progressPercent}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-bar-fill" style="width:${p.progressPercent}%"></div></div>
+          ${p.notes ? `<p class="text-xs text-gray-400 mt-2">${p.notes}</p>` : ''}
+        </div>
+      `).join('');
+    }).catch(err => {
+      document.getElementById('progress-list').innerHTML = `<div class="card text-center text-red-400">Ошибка загрузки прогресса: ${err.message}</div>`;
+    });
+  }
+
+  function openAddProgress() {
+    document.getElementById('add-progress-form').classList.toggle('hidden');
+    api.subjects.getAll().then(subjects => {
+      const sel = document.getElementById('progress-subject');
+      sel.innerHTML = '<option value="">Выберите предмет</option>';
+      subjects.forEach(s => sel.innerHTML += `<option value="${s.id}">${s.name}</option>`);
+    });
+  }
+
+  async function saveProgress() {
+    const subjectId = document.getElementById('progress-subject').value;
+    if (!subjectId) { showToast('Выберите предмет', 'error'); return; }
+    try {
+      await api.student.updateProgress(subjectId, {
+        progressPercent: parseInt(document.getElementById('progress-percent').value),
+        notes: document.getElementById('progress-notes').value
+      });
+      showToast('Прогресс сохранён!');
+      document.getElementById('add-progress-form').classList.add('hidden');
+      loadProgress();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // MATERIALS
+  function loadMaterials() {
+    api.materials.getMy().then(items => {
+      const el = document.getElementById('materials-list');
+      if (!items.length) { el.innerHTML = '<div class="col-span-2 card text-center text-gray-400">Нет материалов</div>'; return; }
+      el.innerHTML = items.map(m => `
+        <div class="card">
+          <div class="font-bold text-gray-900 mb-1">${m.title}</div>
+          <div class="text-xs badge badge-blue mb-2">${m.subjectName || 'Без предмета'}</div>
+          ${m.description ? `<p class="text-sm text-gray-500 mb-2">${m.description}</p>` : ''}
+          ${m.fileUrl ? `<a href="${m.fileUrl}" target="_blank" class="text-orange-500 text-sm underline">📎 Открыть файл</a>` : ''}
+          <div class="text-xs text-gray-400 mt-2">от ${m.tutorFirstName} ${m.tutorLastName}</div>
+        </div>
+      `).join('');
+    }).catch(err => {
+      document.getElementById('materials-list').innerHTML = `<div class="col-span-2 card text-center text-red-400">Ошибка загрузки материалов: ${err.message}</div>`;
+    });
+  }
+
+  // MESSAGES
+  let activeContactId = null;
+  function loadMessages() {
+    api.messages.getContacts().then(async contactIds => {
+      if (!contactIds.length) return;
+      const el = document.getElementById('contacts-list');
+      el.innerHTML = '';
+      for (const id of contactIds) {
+        el.innerHTML += `<button onclick="loadChat(${id})" class="w-full text-left card py-3 px-4 hover:border-orange-400 transition">Пользователь #${id}</button>`;
+      }
+    });
+  }
+
+  function loadChat(userId) {
+    activeContactId = userId;
+    api.messages.getConversation(userId).then(messages => {
+      const me = getUser();
+      document.getElementById('chat-area').innerHTML = `
+        <div class="card flex flex-col h-96">
+          <div class="flex-1 overflow-y-auto space-y-3 mb-4" id="chat-messages">
+            ${messages.map(m => `
+              <div class="flex ${m.senderId === me.id ? 'justify-end' : 'justify-start'}">
+                <div class="max-w-xs px-4 py-2 rounded-2xl text-sm ${m.senderId === me.id ? 'gradient-btn text-white' : 'bg-gray-100 text-gray-800'}">
+                  ${m.content}
+                  <div class="text-xs opacity-60 mt-1">${formatDate(m.createdAt)}</div>
+                </div>
+              </div>
+            `).join('') || '<p class="text-center text-gray-400">Нет сообщений</p>'}
+          </div>
+          <div class="flex gap-2">
+            <input type="text" id="msg-input" class="input-field flex-1" placeholder="Написать сообщение..."/>
+            <button onclick="sendMsg()" class="btn-primary px-4">→</button>
+          </div>
+        </div>
+      `;
+      const chatEl = document.getElementById('chat-messages');
+      if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+    });
+  }
+
+  async function sendMsg() {
+    const input = document.getElementById('msg-input');
+    if (!input || !input.value.trim() || !activeContactId) return;
+    try {
+      await api.messages.send({ receiverId: activeContactId, content: input.value.trim() });
+      input.value = '';
+      loadChat(activeContactId);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  loadBookings();
+</script>
+</body>
+</html>

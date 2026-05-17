@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Вход — RepEdu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="bg-[#FFF9F0] min-h-screen flex flex-col">
+
+<nav class="w-full bg-white/90 backdrop-blur border-b border-orange-100 shadow-sm px-6 py-3 flex items-center">
+  <a href="index.html" class="text-2xl font-extrabold gradient-text">RepEdu</a>
+</nav>
+
+<div class="flex-1 flex items-center justify-center px-4 py-16">
+  <div class="w-full max-w-md">
+    <div class="card shadow-xl">
+      <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Добро пожаловать!</h1>
+      <p class="text-gray-400 text-sm mb-6">Войдите в свой аккаунт</p>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+          <input type="email" id="email" required class="input-field" placeholder="you@example.com"/>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Пароль</label>
+          <input type="password" id="password" required class="input-field" placeholder="••••••"/>
+        </div>
+        <div id="error-msg" class="hidden text-red-500 text-sm bg-red-50 p-3 rounded-xl"></div>
+        <button type="submit" class="btn-primary w-full text-base">Войти</button>
+      </form>
+
+      <p class="text-center text-sm text-gray-400 mt-6">
+        Нет аккаунта? <a href="register.html" class="text-orange-500 font-semibold hover:underline">Зарегистрироваться</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  if (isLoggedIn()) {
+    const u = getUser();
+    window.location.href = u.role === 'TUTOR' ? 'tutor-cabinet.html' : 'student-cabinet.html';
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errEl = document.getElementById('error-msg');
+    errEl.classList.add('hidden');
+    try {
+      const data = await api.auth.login({
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      });
+      setAuth(data);
+      window.location.href = data.role === 'TUTOR' ? 'tutor-cabinet.html' : 'student-cabinet.html';
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Репетиторы — RepEdu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body class="bg-[#FFF9F0] min-h-screen">
+
+<nav class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur border-b border-orange-100 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <a href="index.html" class="text-2xl font-extrabold gradient-text">RepEdu</a>
+    <div id="nav-auth" class="flex items-center gap-3">
+      <a href="login.html" class="px-4 py-2 rounded-xl border border-orange-400 text-orange-500 text-sm font-semibold">Войти</a>
+      <a href="register.html" class="px-4 py-2 rounded-xl gradient-btn text-white text-sm font-semibold">Регистрация</a>
+    </div>
+  </div>
+</nav>
+
+<div class="pt-24 pb-16 px-6 max-w-7xl mx-auto">
+  <div class="mb-2">
+    <a href="javascript:history.back()" class="text-orange-500 text-sm font-medium hover:underline">← Назад</a>
+  </div>
+  <div class="flex flex-col lg:flex-row gap-8">
+
+    <!-- FILTERS -->
+    <aside class="lg:w-72 flex-shrink-0">
+      <div class="card sticky top-24">
+        <h2 class="font-bold text-gray-800 text-lg mb-4">Фильтры</h2>
+
+        <div class="mb-4">
+          <label class="text-sm font-semibold text-gray-700 mb-1 block">Город</label>
+          <select id="filter-city" class="input-field">
+            <option value="">Все города</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-sm font-semibold text-gray-700 mb-1 block">Предмет</label>
+          <select id="filter-subject" class="input-field">
+            <option value="">Все предметы</option>
+          </select>
+        </div>
+
+        <div class="mb-4">
+          <label class="text-sm font-semibold text-gray-700 mb-2 block">
+            Цена: <span id="price-label" class="text-orange-500 font-bold">0 — 5000 ₽/час</span>
+          </label>
+          <div class="space-y-2">
+            <input type="range" id="min-price" min="0" max="5000" step="100" value="0" class="w-full accent-orange-500"/>
+            <input type="range" id="max-price" min="0" max="5000" step="100" value="5000" class="w-full accent-orange-500"/>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="text-sm font-semibold text-gray-700 mb-2 block">
+            Рейтинг: <span id="rating-label" class="text-orange-500 font-bold">1.0 — 5.0</span>
+          </label>
+          <div class="space-y-2">
+            <input type="range" id="min-rating" min="1" max="5" step="0.1" value="1" class="w-full accent-orange-500"/>
+            <input type="range" id="max-rating" min="1" max="5" step="0.1" value="5" class="w-full accent-orange-500"/>
+          </div>
+        </div>
+
+        <button onclick="applyFilters()" class="btn-primary w-full">Применить</button>
+        <button onclick="resetFilters()" class="btn-secondary w-full mt-2">Сбросить</button>
+      </div>
+    </aside>
+
+    <!-- TUTORS LIST -->
+    <main class="flex-1">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-extrabold text-gray-900">Репетиторы</h1>
+        <span id="result-count" class="text-gray-400 text-sm"></span>
+      </div>
+      <div id="tutors-grid" class="grid md:grid-cols-2 gap-6">
+        <div class="col-span-full text-center text-gray-400 py-16">Загрузка...</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  renderNavAuth();
+  const params = new URLSearchParams(window.location.search);
+
+  let filters = {
+    cityId: params.get('cityId') || null,
+    subjectId: params.get('subjectId') || null,
+    minPrice: null, maxPrice: null,
+    minRating: null, maxRating: null
+  };
+
+  // Load filter options
+  api.cities.getAll().then(cities => {
+    const sel = document.getElementById('filter-city');
+    cities.forEach(c => {
+      const opt = new Option(c.name, c.id);
+      if (String(c.id) === String(filters.cityId)) opt.selected = true;
+      sel.add(opt);
+    });
+  });
+  api.subjects.getAll().then(subjects => {
+    const sel = document.getElementById('filter-subject');
+    subjects.forEach(s => {
+      const opt = new Option(s.name, s.id);
+      if (String(s.id) === String(filters.subjectId)) opt.selected = true;
+      sel.add(opt);
+    });
+  });
+
+  // Range labels
+  ['min-price','max-price'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const min = document.getElementById('min-price').value;
+      const max = document.getElementById('max-price').value;
+      document.getElementById('price-label').textContent = `${min} — ${max} ₽/час`;
+    });
+  });
+  ['min-rating','max-rating'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const min = parseFloat(document.getElementById('min-rating').value).toFixed(1);
+      const max = parseFloat(document.getElementById('max-rating').value).toFixed(1);
+      document.getElementById('rating-label').textContent = `${min} — ${max}`;
+    });
+  });
+
+  function applyFilters() {
+    filters.cityId = document.getElementById('filter-city').value || null;
+    filters.subjectId = document.getElementById('filter-subject').value || null;
+    filters.minPrice = document.getElementById('min-price').value > 0 ? document.getElementById('min-price').value : null;
+    filters.maxPrice = document.getElementById('max-price').value < 5000 ? document.getElementById('max-price').value : null;
+    filters.minRating = parseFloat(document.getElementById('min-rating').value) > 1 ? document.getElementById('min-rating').value : null;
+    filters.maxRating = parseFloat(document.getElementById('max-rating').value) < 5 ? document.getElementById('max-rating').value : null;
+    loadTutors();
+  }
+
+  function resetFilters() {
+    filters = { cityId: null, subjectId: null, minPrice: null, maxPrice: null, minRating: null, maxRating: null };
+    document.getElementById('filter-city').value = '';
+    document.getElementById('filter-subject').value = '';
+    document.getElementById('min-price').value = 0;
+    document.getElementById('max-price').value = 5000;
+    document.getElementById('min-rating').value = 1;
+    document.getElementById('max-rating').value = 5;
+    document.getElementById('price-label').textContent = '0 — 5000 ₽/час';
+    document.getElementById('rating-label').textContent = '1.0 — 5.0';
+    loadTutors();
+  }
+
+  function loadTutors() {
+    const grid = document.getElementById('tutors-grid');
+    grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-16">Загрузка...</div>';
+    api.tutors.getAll(filters).then(tutors => {
+      document.getElementById('result-count').textContent = `Найдено: ${tutors.length}`;
+      if (!tutors.length) {
+        grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-16">Репетиторов не найдено. Попробуйте изменить фильтры.</div>';
+        return;
+      }
+      grid.innerHTML = tutors.map(t => `
+        <div class="tutor-card" onclick="window.location='tutor-profile.html?id=${t.id}'">
+          <div class="flex items-start gap-4">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 overflow-hidden">
+              ${t.photoUrl ? `<img src="${t.photoUrl}" class="w-full h-full object-cover rounded-2xl"/>` : t.firstName[0]}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-gray-900 text-lg">${t.firstName} ${t.lastName}</div>
+              <div class="text-sm text-gray-400">${t.cityName || '—'}</div>
+              <div class="flex items-center gap-1 mt-1">
+                <span class="text-yellow-400 text-sm">${starsHtml(t.rating)}</span>
+                <span class="text-sm text-gray-500">${t.rating.toFixed(1)} (${t.totalReviews})</span>
+              </div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              ${t.pricePerHour ? `<div class="text-lg font-extrabold gradient-text">${t.pricePerHour} ₽</div><div class="text-xs text-gray-400">в час</div>` : '<div class="text-sm text-gray-400">Цена по договорённости</div>'}
+            </div>
+          </div>
+          ${t.subjects && t.subjects.length ? `
+          <div class="mt-3 flex flex-wrap gap-1">
+            ${t.subjects.slice(0, 4).map(s => `<span class="badge badge-blue">${s}</span>`).join('')}
+            ${t.subjects.length > 4 ? `<span class="badge badge-blue">+${t.subjects.length - 4}</span>` : ''}
+          </div>` : ''}
+          <div class="mt-3 flex justify-between items-center text-xs text-gray-400">
+            <span>📚 ${t.totalLessons} уроков</span>
+            <span class="text-orange-500 font-semibold">Подробнее →</span>
+          </div>
+        </div>
+      `).join('');
+    }).catch(() => {
+      grid.innerHTML = '<div class="col-span-full text-center text-red-400 py-16">Ошибка загрузки</div>';
+    });
+  }
+
+  loadTutors();
+</script>
+</body>
+</html>

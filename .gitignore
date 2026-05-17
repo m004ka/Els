@@ -1,0 +1,61 @@
+# ===== Java / Maven =====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# ===== Spring Boot =====
+spring-shell.log
+application-local.properties
+application-local.yml
+
+# ===== IDE =====
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# ===== OS =====
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# ===== Node.js =====
+node_modules/
+npm-debug.log*
+dist/
+.vite/
+
+# ===== Docker =====
+.env
+.env.*
+!.env.example
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Secrets / configs =====
+**/application-prod.yml
+**/application-prod.properties

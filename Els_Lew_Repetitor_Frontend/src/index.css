@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn { @apply px-4 py-2 rounded-xl font-semibold transition-all text-sm; }
+  .btn-primary { @apply btn text-white shadow; background: linear-gradient(135deg, #FF6B35, #FF3B30); }
+  .btn-primary:hover { @apply opacity-90; }
+  .btn-outline { @apply btn border-2 border-orange-400 text-orange-500 bg-white hover:bg-orange-50; }
+  .card { @apply bg-white rounded-2xl border border-orange-100 p-5; }
+  .input { @apply w-full px-4 py-2.5 rounded-xl border-2 border-orange-200 bg-white text-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100; }
+  .badge { @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold; }
+  .tab-btn { @apply px-4 py-2 rounded-xl text-sm font-semibold text-gray-500 transition; }
+  .tab-btn.active { @apply text-white; background: linear-gradient(135deg, #FF6B35, #FF3B30); }
+}
+
+.gradient-text { background: linear-gradient(135deg, #FF6B35, #FF3B30); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.gradient-bg { background: linear-gradient(135deg, #FF6B35, #FF3B30); }
+
+/* FullCalendar overrides */
+.fc .fc-button-primary { background: linear-gradient(135deg, #FF6B35, #FF3B30) !important; border-color: transparent !important; }
+.fc .fc-event { border: none !important; border-radius: 6px !important; font-size: 0.72rem !important; }
+.fc-event-free { background: #22C55E !important; }
+.fc-event-booked { background: #F59E0B !important; }
+.fc-event-cancelled { background: #EF4444 !important; }
