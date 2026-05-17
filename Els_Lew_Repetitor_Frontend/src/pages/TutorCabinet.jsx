@@ -101,8 +101,11 @@ export default function TutorCabinet() {
     } catch (e) { toast(e.message, 'error') }
   }
 
-  const openChat = async id => {
+  const openChat = async (id, contact) => {
     setActiveChat(id)
+    if (contact && !contacts.find(c => c.id === id)) {
+      setContacts(prev => [...prev, contact])
+    }
     setMessages(await api.messages.getConversation(id))
   }
 
@@ -191,6 +194,8 @@ export default function TutorCabinet() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`badge ${STATUS_COLOR[b.status]}`}>{STATUS_RU[b.status]}</span>
+                    <button onClick={() => { selectTab('messages'); setTimeout(() => openChat(b.studentId, { id: b.studentId, firstName: b.studentFirstName, lastName: b.studentLastName }), 100) }}
+                      className="text-xs text-orange-500 hover:underline">💬 Написать</button>
                     {b.status === 'CONFIRMED' && (
                       <button onClick={() => completeBooking(b.id)} className="btn-primary text-xs px-3 py-1.5">Завершить</button>
                     )}
